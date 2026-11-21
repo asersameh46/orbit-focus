@@ -762,7 +762,8 @@
     sessionRef.current = session;
     const previousStatus = React.useRef(session.status);
     const accountLoadVersion = React.useRef(0);
-    const authUserId = authSession && authSession.user ? authSession.user.id : null;
+    const authUser = authSession && authSession.user;
+    const authUserId = authUser && !authUser.is_anonymous ? authUser.id : null;
     const active = session.status === "running" || session.status === "paused";
     const remaining = session.status === "running" ? Math.max(0, session.endAt - Date.now()) : session.remaining;
     const progress = Math.max(0, Math.min(1, remaining / session.duration));
