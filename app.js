@@ -763,7 +763,7 @@
     const previousStatus = React.useRef(session.status);
     const accountLoadVersion = React.useRef(0);
     const authUser = authSession && authSession.user;
-    const authUserId = authUser && !authUser.is_anonymous ? authUser.id : null;
+    const authUserId = authUser && authUser.email && !authUser.is_anonymous ? authUser.id : null;
     const active = session.status === "running" || session.status === "paused";
     const remaining = session.status === "running" ? Math.max(0, session.endAt - Date.now()) : session.remaining;
     const progress = Math.max(0, Math.min(1, remaining / session.duration));
@@ -875,17 +875,18 @@
     }, []);
 
     React.useEffect(function () {
-      if (!authUserId) {
+      if (!authReady || !authUserId) {
         accountLoadVersion.current += 1;
         setAccountProfile(null);
         setAccountStats(null);
         setAccountName("");
         setAccountLoading(false);
+        setAccountError("");
         return;
       }
       setAccountNotice("");
       loadAccountData(true);
-    }, [authUserId]);
+    }, [authUserId, authReady]);
 
     React.useEffect(function () {
       document.body.dataset.theme = theme;
@@ -1225,7 +1226,7 @@
       }
     }
 
-    const hasVerifiedAccount = Boolean(authSession && authSession.user && !authSession.user.is_anonymous);
+    const hasVerifiedAccount = Boolean(authUser && authUser.email && !authUser.is_anonymous);
     if (!authReady || !hasVerifiedAccount) {
       return h(AuthenticationGate, {
         ready: authReady,

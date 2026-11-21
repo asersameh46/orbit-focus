@@ -56,7 +56,8 @@
     if (!client) throw new Error("Cloud services are not configured.");
     const current = await client.auth.getSession();
     if (current.error) throw current.error;
-    if (!current.data.session || (current.data.session.user && current.data.session.user.is_anonymous)) {
+    const user = current.data.session && current.data.session.user;
+    if (!user || !user.email || user.is_anonymous) {
       throw new Error("Sign in with your email to use Orbit Focus.");
     }
     return current.data.session;

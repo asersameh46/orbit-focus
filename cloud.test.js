@@ -39,10 +39,11 @@ test("preserves local Gemini endpoint when cloud configuration is absent", async
 test("requires an email account instead of creating an anonymous Supabase session", async function () {
   let anonymousSignInAttempted = false;
   let rpcCalled = false;
+  let session = null;
   const client = {
     auth: {
       getSession: async function () {
-        return { data: { session: null }, error: null };
+        return { data: { session: session }, error: null };
       },
       signInAnonymously: async function () {
         anonymousSignInAttempted = true;
@@ -61,6 +62,8 @@ test("requires an email account instead of creating an anonymous Supabase sessio
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "cloud.js"), "utf8"), context);
 
   await assert.rejects(context.OrbitCloud.joinLeaderboard("OrbitLearner"), /Sign in with your email/);
+  session = { user: { id: "guest-1", is_anonymous: true } };
+  await assert.rejects(context.OrbitCloud.joinLeaderboard("OrbitLearner"), /Sign in with your email/);
 
   assert.equal(anonymousSignInAttempted, false);
   assert.equal(rpcCalled, false);
@@ -71,7 +74,7 @@ test("sends friend actions through authenticated Supabase RPCs", async function 
   const client = {
     auth: {
       getSession: async function () {
-        return { data: { session: { access_token: "test-session" } }, error: null };
+        return { data: { session: { access_token: "test-session", user: { email: "friend@example.com", is_anonymous: false } } }, error: null };
       }
     },
     rpc: async function (name, args) {
