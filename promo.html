@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A short introduction to Orbit Focus.">
+  <title>Orbit Focus — Promo video</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, "Segoe UI", sans-serif; background: #080914; color: #f3f0ff; }
+    * { box-sizing: border-box; }
+    body { display: grid; min-height: 100vh; place-items: center; margin: 0; padding: 28px; }
+    main { width: min(100%, 1000px); }
+    canvas, video { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid rgba(202,180,255,.2); border-radius: 18px; background: #111322; box-shadow: 0 25px 90px rgba(0,0,0,.4); }
+    .controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+    p { margin: 0; color: #a4a8ba; font-size: 14px; line-height: 1.6; }
+    button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; color: #171126; background: linear-gradient(120deg, #c8a9ff, #90efd9); cursor: pointer; font-size: 14px; font-weight: 700; }
+    button:disabled { opacity: .65; cursor: wait; }
+    a { color: #cbb6ff; }
+    @media (max-width: 600px) { body { padding: 14px; } .controls { align-items: stretch; flex-direction: column; } button { width: 100%; } }
+  </style>
+</head>
+<body>
+  <main>
+    <video controls playsinline src="assets/orbit-focus-promo.webm" aria-label="Orbit Focus 16-second promotional video"></video>
+    <p style="margin:12px 0"><a href="assets/orbit-focus-promo.webm" download>Download the finished promo video</a></p>
+    <canvas id="promo" width="1920" height="1080" aria-label="Animated Orbit Focus promotional video preview"></canvas>
+    <div class="controls">
+      <p id="status">Play the 16-second promo above, or regenerate and download a 16:9 WebM video.</p>
+      <button id="download" type="button">Download promo video</button>
+    </div>
+    <p style="margin-top:12px"><a href="./index.html">Open Orbit Focus</a></p>
+  </main>
+  <script>
+    (function () {
+      const canvas = document.getElementById("promo");
+      const context = canvas.getContext("2d");
+      const status = document.getElementById("status");
+      const button = document.getElementById("download");
+      const video = document.querySelector("video");
+      const scenes = [
+        { title: "Make space for focus.", subtitle: "A calmer place to begin.", color: "#bca4ff" },
+        { title: "Choose one small step.", subtitle: "Set a timer. Let the rest wait.", color: "#8eead4" },
+        { title: "Show up for yourself.", subtitle: "Build momentum, one session at a time.", color: "#f6c887" },
+        { title: "Your next level is closer.", subtitle: "Orbit Focus · Make space for focus.", color: "#c6a9ff" }
+      ];
+      const duration = 16;
+      let start = performance.now();
+
+      function draw(now) {
+        const time = Math.max(0, Math.min(duration - 0.04, (now - start) / 1000));
+        const sceneIndex = Math.min(scenes.length - 1, Math.floor(time / (duration / scenes.length)));
+        const scene = scenes[sceneIndex];
+        const local = (time % (duration / scenes.length)) / (duration / scenes.length);
+        const fade = Math.min(1, local * 5, (1 - local) * 5);
+        const glow = context.createRadialGradient(1440, 270, 10, 1060, 520, 1050);
+        glow.addColorStop(0, "rgba(110,91,177,.32)");
+        glow.addColorStop(1, "#080914");
+        context.fillStyle = glow;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let index = 0; index < 3; index += 1) {
+          const radius = 150 + index * 75 + Math.sin(time * 1.1 + index) * 8;
+          context.beginPath();
+          context.ellipse(1450, 510, radius * 1.5, radius * .62, -.42, 0, Math.PI * 2);
+          context.strokeStyle = index === 1 ? scene.color + "99" : "rgba(196,178,255,.18)";
+          context.lineWidth = index === 1 ? 4 : 2;
+          context.stroke();
+        }
+        context.beginPath();
+        context.arc(1450, 510, 15 + Math.sin(time * 2) * 2, 0, Math.PI * 2);
+        context.fillStyle = scene.color;
+        context.shadowBlur = 34;
+        context.shadowColor = scene.color;
+        context.fill();
+        context.shadowBlur = 0;
+
+        const lift = (1 - fade) * 34;
+        context.globalAlpha = fade;
+        context.textAlign = "left";
+        context.fillStyle = "#cbb6ff";
+        context.font = "600 27px Segoe UI, sans-serif";
+        context.fillText("ORBIT FOCUS", 170, 260);
+        context.fillStyle = "#f3f0ff";
+        context.font = "700 90px Segoe UI, sans-serif";
+        wrapText(scene.title, 170, 430 + lift, 820, 110);
+        context.fillStyle = "#b4b6c8";
+        context.font = "400 34px Segoe UI, sans-serif";
+        context.fillText(scene.subtitle, 174, 600 + lift);
+        context.globalAlpha = 1;
+
+        context.fillStyle = "rgba(255,255,255,.2)";
+        context.fillRect(170, 890, 1580, 3);
+        context.fillStyle = scene.color;
+        context.fillRect(170, 890, 1580 * Math.min(1, time / duration), 3);
+        requestAnimationFrame(draw);
+      }
+
+      function wrapText(text, x, y, maxWidth, lineHeight) {
+        const words = text.split(" ");
+        let line = "";
+        let lineNumber = 0;
+        words.forEach(function (word) {
+          const candidate = line ? line + " " + word : word;
+          if (context.measureText(candidate).width > maxWidth && line) {
+            context.fillText(line, x, y + lineNumber * lineHeight);
+            line = word;
+            lineNumber += 1;
+          } else {
+            line = candidate;
+          }
+        });
+        if (line) context.fillText(line, x, y + lineNumber * lineHeight);
+      }
+
+      button.addEventListener("click", function () {
+        if (!canvas.captureStream || !window.MediaRecorder) {
+          status.textContent = "Video export is not supported in this browser. Try a current version of Chrome or Edge.";
+          return;
+        }
+        button.disabled = true;
+        status.textContent = "Creating the 16-second promo video…";
+        start = performance.now();
+        const stream = canvas.captureStream(30);
+        const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+          ? "video/webm;codecs=vp8"
+          : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+            ? "video/webm;codecs=vp9"
+            : "video/webm";
+        const recorder = new MediaRecorder(stream, { mimeType: mimeType });
+        const chunks = [];
+        recorder.addEventListener("dataavailable", function (event) {
+          if (event.data.size) chunks.push(event.data);
+        });
+        recorder.addEventListener("stop", function () {
+          const blob = new Blob(chunks, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "orbit-focus-promo.webm";
+          link.click();
+          video.src = url;
+          window.addEventListener("pagehide", function () { URL.revokeObjectURL(url); }, { once: true });
+          stream.getTracks().forEach(function (track) { track.stop(); });
+          button.disabled = false;
+          status.textContent = "Video ready. Downloaded orbit-focus-promo.webm.";
+        });
+        recorder.start();
+        window.setTimeout(function () { recorder.stop(); }, duration * 1000);
+      });
+
+      requestAnimationFrame(draw);
+    }());
+  </script>
+</body>
+</html>
