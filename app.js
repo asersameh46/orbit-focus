@@ -857,7 +857,7 @@
             h("div", { className: "topbar-context" },
               h("span", { className: "topbar-live" }, h("i"), "YOUR SPACE"),
               h("span", { className: "topbar-separator" }, "/"),
-              h("span", null, pageTitle ? pageTitle.label : "Overview")),
+              h("span", { id: "topbarContextName" }, pageTitle ? pageTitle.label : "Overview")),
             h("div", { className: "topbar-right" },
               h("button", {
                 className: "sound-toggle" + (soundEnabled ? " enabled" : ""),
