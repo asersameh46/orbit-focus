@@ -1,14 +1,14 @@
-const CACHE_NAME = "orbit-focus-v1";
+const CACHE_NAME = "orbit-focus-v2";
 const APP_FILES = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./theme-mode.css",
+  "./styles.css?v=2",
+  "./theme-mode.css?v=2",
   "./theme-mode.js",
   "./sounds.js",
   "./ai-coach.js",
-  "./cloud.js",
-  "./app.js",
+  "./cloud.js?v=2",
+  "./app.js?v=2",
   "./backend-config.js",
   "./assets/orbit-logo.svg"
 ];
