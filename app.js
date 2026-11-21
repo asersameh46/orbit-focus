@@ -409,14 +409,48 @@
               h("div", null, h("span", null, "03"), h("strong", null, "Cosmic"), h("small", null, "5,000 credits")))))));
   }
 
+  function AuthenticationGate(props) {
+    function submit(event) {
+      event.preventDefault();
+      props.onSendLink();
+    }
+
+    return h("main", { className: "auth-gate" },
+      h("section", { className: "auth-gate-card", "aria-labelledby": "authGateTitle" },
+        h("div", { className: "auth-gate-brand" },
+          h("span", { className: "brand-mark" }, h("img", { src: "assets/orbit-logo.svg", alt: "" })),
+          h("strong", null, "Orbit Focus")),
+        h("div", { className: "auth-gate-copy" },
+          h("span", { className: "auth-gate-eyebrow" }, "A FOCUS SPACE FOR YOU"),
+          h("h1", { id: "authGateTitle" }, props.ready ? "Welcome to Orbit." : "Checking your account…"),
+          h("p", null, props.ready
+            ? "Sign in with a secure link sent to your email. New here? We'll create your account when you continue."
+            : "One moment while we securely restore your session.")),
+        props.ready && !props.configured
+          ? h("p", { className: "auth-gate-error", role: "alert" }, "Sign-in is temporarily unavailable because account services are not configured.")
+          : props.ready
+            ? h("form", { className: "auth-gate-form", onSubmit: submit },
+                h("label", { htmlFor: "authGateEmail" }, "Email address"),
+                h("input", { id: "authGateEmail", type: "email", required: true, maxLength: 254,
+                  autoComplete: "email", value: props.email, onChange: function (event) { props.setEmail(event.target.value); },
+                  placeholder: "you@example.com" }),
+                props.linkSent
+                  ? h("p", { className: "auth-gate-notice", role: "status" }, "We sent a sign-in link to " + props.email + ". Open it on this device to continue.")
+                  : h("small", null, "We'll email you a secure, one-time sign-in link. No password needed."),
+                h("button", { className: "button button-start auth-gate-submit", type: "submit", disabled: props.loading },
+                  props.loading ? "Sending link…" : props.linkSent ? "Resend sign-in link" : "Email me a sign-in link"),
+                props.linkSent
+                  ? h("div", { className: "auth-gate-actions" },
+                      h("button", { className: "account-mode-toggle", type: "button", disabled: props.loading, onClick: props.onChangeEmail }, "Use a different email"))
+                  : null,
+                props.error ? h("p", { className: "auth-gate-error", role: "alert" }, props.error) : null)
+            : h("p", { className: "auth-gate-loading", role: "status" }, "Restoring your account…"),
+        h("p", { className: "auth-gate-footnote" }, "Your focus history stays with your account when you return.")));
+  }
+
   function AccountPage(props) {
     const user = props.authSession && props.authSession.user;
-    const isAnonymous = Boolean(user && user.is_anonymous);
-
-    function submitAuth(event) {
-      event.preventDefault();
-      props.onAuthenticate();
-    }
+    if (!user || user.is_anonymous) return null;
 
     function submitProfile(event) {
       event.preventDefault();
@@ -426,87 +460,45 @@
     return h("div", { className: "page-stack account-page" },
       h(PageHeader, {
         eyebrow: "YOUR ORBIT ACCOUNT",
-        title: user && !isAnonymous ? "Your progress, together." : "Keep your progress with you.",
-        description: "Sign in on your devices to keep your focus statistics with your account."
+        title: "Your progress, together.",
+        description: "Your focus statistics stay with your account across devices."
       }),
-      !props.configured
-        ? h("section", { className: "account-panel" },
-            h("p", { className: "account-message", role: "alert" }, "Account services are not configured. Connect the Supabase project to sign up or sign in."))
-        : user && !isAnonymous
-          ? h(React.Fragment, null,
-              h("section", { className: "account-panel" },
-                h("div", { className: "account-panel-heading" },
-                  h("div", null, h("h2", null, "Profile"), h("p", null, user.email || "Signed in with your Orbit account.")),
-                  h("button", { className: "button button-reset", type: "button", disabled: props.loading, onClick: props.onSignOut }, "Sign out")),
-                h("form", { className: "account-profile-form", onSubmit: submitProfile },
-                  h("label", { htmlFor: "profileDisplayName" }, "Display name"),
-                  h("div", null,
-                    h("input", { id: "profileDisplayName", type: "text", minLength: 2, maxLength: 24, required: true,
-                      pattern: "[A-Za-z0-9 _.-]+", value: props.displayName,
-                      onChange: function (event) { props.setDisplayName(event.target.value); },
-                      autoComplete: "nickname", placeholder: "Your display name" }),
-                    h("button", { className: "button button-start", type: "submit", disabled: props.loading }, props.loading ? "Saving…" : "Save profile")),
-                  h("small", null, "Changing this name also updates it on the public leaderboard if you joined it.")),
-                props.error ? h("p", { className: "account-message account-error", role: "alert" }, props.error) : null,
-                props.notice ? h("p", { className: "account-message", role: "status" }, props.notice) : null),
-              h("section", { className: "account-panel" },
-                h("div", { className: "account-panel-heading" },
-                  h("div", null, h("h2", null, "Your statistics"), h("p", null, "Focus sessions saved to this account across your devices."))),
-                props.loading && !props.stats
-                  ? h("div", { className: "leaderboard-empty", role: "status" }, "Loading your statistics…")
-                  : h(React.Fragment, null,
-                      h("div", { className: "account-stat-grid" },
-                        h("article", { className: "account-stat" }, h("strong", null, Number(props.stats && props.stats.completed_sessions || 0).toLocaleString()), h("span", null, "Sessions")),
-                        h("article", { className: "account-stat" }, h("strong", null, formatDuration(Number(props.stats && props.stats.total_focus_ms || 0))), h("span", null, "Focus time")),
-                        h("article", { className: "account-stat" }, h("strong", null, Number(props.stats && props.stats.credits || 0).toLocaleString()), h("span", null, "Credits"))),
-                      h("div", { className: "account-history" },
-                        h("h3", null, "Recent sessions"),
-                        props.stats && props.stats.recent_sessions && props.stats.recent_sessions.length
-                          ? h("div", { className: "activity-list" }, props.stats.recent_sessions.map(function (item, index) {
-                              return h("div", { className: "activity-item", key: item.completed_at + "-account-" + index },
-                                h("span", { className: "activity-check" }, h(Icon, { name: "check" })),
-                                h("span", { className: "activity-name" }, formatDuration(item.duration_ms),
-                                  h("small", null, new Date(item.completed_at).toLocaleString())),
-                                h("strong", { className: "activity-credit" }, "+" + item.credits + " CR"));
-                            }))
-                          : h("div", { className: "leaderboard-empty" }, "Finish a focus session while signed in to start building account statistics.")))),
-            )
-          : h("section", { className: "account-panel" },
-              isAnonymous
-                ? h("div", { className: "account-panel-heading" },
-                    h("div", null, h("h2", null, "Save this temporary account"),
-                      h("p", null, "Create a password account to keep your current leaderboard and friend connections.")),
-                    h("button", { className: "button button-reset", type: "button", disabled: props.loading, onClick: props.onSignOut }, "Use another account"))
-                : h("div", { className: "account-panel-heading" },
-                    h("div", null, h("h2", null, props.authMode === "signup" ? "Create your account" : "Welcome back"),
-                      h("p", null, props.authMode === "signup" ? "Use the same account on your other devices." : "Sign in to see your saved profile and statistics."))),
-              h("form", { className: "account-auth-form", onSubmit: submitAuth },
-                h("label", { htmlFor: "accountEmail" }, "Email"),
-                h("input", { id: "accountEmail", type: "email", required: true, maxLength: 254,
-                  autoComplete: "email", value: props.email, onChange: function (event) { props.setEmail(event.target.value); },
-                  placeholder: "you@example.com" }),
-                h("label", { htmlFor: "accountPassword" }, "Password"),
-                h("input", { id: "accountPassword", type: "password", required: true, minLength: 8,
-                  autoComplete: props.authMode === "signup" ? "new-password" : "current-password",
-                  value: props.password, onChange: function (event) { props.setPassword(event.target.value); },
-                  placeholder: "At least 8 characters" }),
-                props.authMode === "signup"
-                  ? h(React.Fragment, null,
-                      h("label", { htmlFor: "accountPasswordConfirm" }, "Confirm password"),
-                      h("input", { id: "accountPasswordConfirm", type: "password", required: true, minLength: 8,
-                        autoComplete: "new-password", value: props.confirmPassword,
-                        onChange: function (event) { props.setConfirmPassword(event.target.value); },
-                        placeholder: "Enter the password again" }))
-                  : null,
-                h("button", { className: "button button-start account-submit", type: "submit", disabled: props.loading },
-                  props.loading ? "Please wait…" : props.authMode === "signup" ? "Create account" : "Sign in"),
-                !isAnonymous
-                  ? h("button", { className: "account-mode-toggle", type: "button", disabled: props.loading,
-                      onClick: function () { props.onSetAuthMode(props.authMode === "signup" ? "signin" : "signup"); } },
-                      props.authMode === "signup" ? "Already have an account? Sign in" : "New to Orbit? Create an account")
-                  : null),
-              props.error ? h("p", { className: "account-message account-error", role: "alert" }, props.error) : null,
-              props.notice ? h("p", { className: "account-message", role: "status" }, props.notice) : null)
+      h("section", { className: "account-panel" },
+        h("div", { className: "account-panel-heading" },
+          h("div", null, h("h2", null, "Profile"), h("p", null, user.email || "Signed in with your Orbit account.")),
+          h("button", { className: "button button-reset", type: "button", disabled: props.loading, onClick: props.onSignOut }, "Sign out")),
+        h("form", { className: "account-profile-form", onSubmit: submitProfile },
+          h("label", { htmlFor: "profileDisplayName" }, "Display name"),
+          h("div", null,
+            h("input", { id: "profileDisplayName", type: "text", minLength: 2, maxLength: 24, required: true,
+              pattern: "[A-Za-z0-9 _.-]+", value: props.displayName,
+              onChange: function (event) { props.setDisplayName(event.target.value); },
+              autoComplete: "nickname", placeholder: "Your display name" }),
+            h("button", { className: "button button-start", type: "submit", disabled: props.loading }, props.loading ? "Saving…" : "Save profile")),
+          h("small", null, "Changing this name also updates it on the public leaderboard if you joined it.")),
+        props.error ? h("p", { className: "account-message account-error", role: "alert" }, props.error) : null,
+        props.notice ? h("p", { className: "account-message", role: "status" }, props.notice) : null),
+      h("section", { className: "account-panel" },
+        h("div", { className: "account-panel-heading" },
+          h("div", null, h("h2", null, "Your statistics"), h("p", null, "Focus sessions saved to this account across your devices."))),
+        props.loading && !props.stats
+          ? h("div", { className: "leaderboard-empty", role: "status" }, "Loading your statistics…")
+          : h(React.Fragment, null,
+              h("div", { className: "account-stat-grid" },
+                h("article", { className: "account-stat" }, h("strong", null, Number(props.stats && props.stats.completed_sessions || 0).toLocaleString()), h("span", null, "Sessions")),
+                h("article", { className: "account-stat" }, h("strong", null, formatDuration(Number(props.stats && props.stats.total_focus_ms || 0))), h("span", null, "Focus time")),
+                h("article", { className: "account-stat" }, h("strong", null, Number(props.stats && props.stats.credits || 0).toLocaleString()), h("span", null, "Credits"))),
+              h("div", { className: "account-history" },
+                h("h3", null, "Recent sessions"),
+                props.stats && props.stats.recent_sessions && props.stats.recent_sessions.length
+                  ? h("div", { className: "activity-list" }, props.stats.recent_sessions.map(function (item, index) {
+                      return h("div", { className: "activity-item", key: item.completed_at + "-account-" + index },
+                        h("span", { className: "activity-check" }, h(Icon, { name: "check" })),
+                        h("span", { className: "activity-name" }, formatDuration(item.duration_ms),
+                          h("small", null, new Date(item.completed_at).toLocaleString())),
+                        h("strong", { className: "activity-credit" }, "+" + item.credits + " CR"));
+                    }))
+                  : h("div", { className: "leaderboard-empty" }, "Finish a focus session while signed in to start building account statistics."))))
     );
   }
 
@@ -754,10 +746,9 @@
     const [friendError, setFriendError] = React.useState("");
     const [friendNotice, setFriendNotice] = React.useState("");
     const [authSession, setAuthSession] = React.useState(null);
-    const [authMode, setAuthMode] = React.useState("signin");
+    const [authReady, setAuthReady] = React.useState(false);
     const [authEmail, setAuthEmail] = React.useState("");
-    const [authPassword, setAuthPassword] = React.useState("");
-    const [authPasswordConfirm, setAuthPasswordConfirm] = React.useState("");
+    const [authLinkSent, setAuthLinkSent] = React.useState(false);
     const [accountProfile, setAccountProfile] = React.useState(null);
     const [accountStats, setAccountStats] = React.useState(null);
     const [accountName, setAccountName] = React.useState("");
@@ -852,17 +843,28 @@
     }
 
     React.useEffect(function () {
-      if (!window.OrbitCloud.configured) return undefined;
+      if (!window.OrbitCloud.configured) {
+        setAuthReady(true);
+        return undefined;
+      }
       let active = true;
       const unsubscribe = window.OrbitCloud.watchAuth(function (nextSession) {
-        if (active) setAuthSession(nextSession);
+        if (active) {
+          setAuthSession(nextSession);
+          setAuthReady(true);
+          if (nextSession && nextSession.user && !nextSession.user.is_anonymous) setAuthLinkSent(false);
+        }
       });
       window.OrbitCloud.getAuthSession().then(function (currentSession) {
-        if (active) setAuthSession(currentSession);
+        if (active) {
+          setAuthSession(currentSession);
+          setAuthReady(true);
+        }
       }).catch(function (error) {
         if (active) {
           console.error("Could not restore the signed-in account.", error);
           setAccountError("Could not check your account session. Refresh and try again.");
+          setAuthReady(true);
         }
       });
       return function () {
@@ -1088,44 +1090,26 @@
       }
     }
 
-    async function authenticate() {
+    async function sendAuthenticationLink() {
       setAccountLoading(true);
       setAccountError("");
       setAccountNotice("");
       try {
-        if (authMode === "signup" && authPassword !== authPasswordConfirm) {
-          throw new Error("The passwords do not match.");
-        }
-
-        if (authMode === "signin") {
-          await window.OrbitCloud.signIn(authEmail.trim(), authPassword);
-          setAccountNotice("Signed in. Loading your saved profile and statistics.");
-        } else {
-          const upgradingAnonymous = Boolean(authSession && authSession.user && authSession.user.is_anonymous);
-          if (upgradingAnonymous) {
-            await window.OrbitCloud.upgradeAnonymousAccount(authEmail.trim(), authPassword);
-          } else {
-            await window.OrbitCloud.signUp(authEmail.trim(), authPassword);
-          }
-          const currentSession = await window.OrbitCloud.getAuthSession();
-          setAuthSession(currentSession);
-          if (!currentSession) {
-            setAccountNotice("Account created. Check your email to confirm it, then sign in.");
-          } else if (upgradingAnonymous) {
-            setAccountNotice("Your temporary account is now linked to your email. Your leaderboard and friend connections are preserved.");
-            await loadAccountData(true);
-          } else {
-            setAccountNotice("Account created. Your profile and saved sessions are loading.");
-          }
-        }
-        setAuthPassword("");
-        setAuthPasswordConfirm("");
+        await window.OrbitCloud.sendEmailLink(authEmail.trim());
+        setAuthLinkSent(true);
+        setAccountNotice("");
       } catch (error) {
-        console.error("Could not complete the account sign-in or registration.", error);
-        setAccountError(error.message || "Could not complete that account action. Please try again.");
+        console.error("Could not send a sign-in link.", error);
+        setAccountError(error.message || "Could not send your sign-in link. Please try again.");
       } finally {
         setAccountLoading(false);
       }
+    }
+
+    function changeAuthenticationEmail() {
+      setAuthLinkSent(false);
+      setAccountError("");
+      setAccountNotice("");
     }
 
     async function saveAccountProfile() {
@@ -1152,6 +1136,8 @@
       setAccountNotice("");
       try {
         await window.OrbitCloud.signOut();
+        setAuthSession(null);
+        setAuthLinkSent(false);
         setAccountNotice("You are signed out. Your progress on this device remains saved.");
       } catch (error) {
         console.error("Could not sign out.", error);
@@ -1238,6 +1224,21 @@
       }
     }
 
+    const hasVerifiedAccount = Boolean(authSession && authSession.user && !authSession.user.is_anonymous);
+    if (!authReady || !hasVerifiedAccount) {
+      return h(AuthenticationGate, {
+        ready: authReady,
+        configured: window.OrbitCloud.configured,
+        email: authEmail,
+        setEmail: setAuthEmail,
+        linkSent: authLinkSent,
+        loading: accountLoading,
+        error: accountError,
+        onSendLink: sendAuthenticationLink,
+        onChangeEmail: changeAuthenticationEmail
+      });
+    }
+
     const statusText = session.status === "running" ? "In your focus flow"
       : session.status === "paused" ? "Taking a breather"
       : session.status === "completed" ? "Session complete" : "Ready when you are";
@@ -1275,28 +1276,13 @@
       pageContent = h(RewardsPage, { session: session });
     } else if (page === "account") {
       pageContent = h(AccountPage, {
-        configured: window.OrbitCloud.configured,
         authSession: authSession,
-        authMode: authMode,
-        onSetAuthMode: function (nextMode) {
-          setAuthMode(nextMode);
-          setAccountError("");
-          setAccountNotice("");
-        },
-        email: authEmail,
-        setEmail: setAuthEmail,
-        password: authPassword,
-        setPassword: setAuthPassword,
-        confirmPassword: authPasswordConfirm,
-        setConfirmPassword: setAuthPasswordConfirm,
-        profile: accountProfile,
         stats: accountStats,
         displayName: accountName,
         setDisplayName: setAccountName,
         loading: accountLoading,
         error: accountError,
         notice: accountNotice,
-        onAuthenticate: authenticate,
         onSaveProfile: saveAccountProfile,
         onSignOut: signOutAccount
       });

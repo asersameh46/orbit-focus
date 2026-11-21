@@ -1,8 +1,8 @@
 # Orbit Focus
 
-A personal focus dashboard with a session timer, saved progress, rewards, an optional shared leaderboard and friend requests, a Gemini-powered coach, five color themes, dark/light display modes, and synthesized sound effects.
+A personal focus dashboard with email-link sign-in, a session timer, saved progress, rewards, an optional shared leaderboard and friend requests, a Gemini-powered coach, five color themes, dark/light display modes, and synthesized sound effects.
 
-Use **My profile** in the app to create an email/password account or sign in on another device. The profile page lets signed-in users change their display name and view account-level focus sessions, time, credits, and recent session history. Sessions saved on the current device are synced when an account signs in. Anonymous leaderboard users can upgrade their temporary account to an email/password account.
+Visitors must verify their email with a one-time sign-in link before entering the app. A new email creates an account; returning users request a fresh link. The **My profile** page lets signed-in users change their display name and view account-level focus sessions, time, credits, and recent session history. Sessions saved on the current device sync after sign-in.
 
 ## Run locally
 
@@ -18,13 +18,14 @@ The timer, theme, sound preference, and rewards are stored in the browser on thi
 
 ## Configure the shared leaderboard and online Gemini coach
 
-GitHub Pages hosts the static app; Supabase provides anonymous sign-in, the shared leaderboard, and a server-side Gemini function. Setup requires a Supabase project:
+GitHub Pages hosts the static app; Supabase provides email-link authentication, the shared leaderboard, and a server-side Gemini function. Setup requires a Supabase project:
 
-1. In Supabase, enable **Anonymous Sign-Ins** under Authentication providers.
+1. Keep the **Email** provider enabled under Authentication providers.
 2. Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor.
-3. Protect anonymous sign-ins with CAPTCHA under **Authentication → Protection**. Create a Cloudflare Turnstile widget for your website hostname, set its secret in Supabase, and put its public site key in `backend-config.js`. The app requests a CAPTCHA token before creating an anonymous account.
-4. Add `GEMINI_API_KEY` under **Project Settings → Edge Functions → Secrets**. Keep the key in Supabase only; never commit it or put it in `backend-config.js`.
-5. Deploy the Edge Function with the Supabase CLI:
+3. Configure **Authentication → URL Configuration** with the deployed site URL and allowed redirect URL.
+4. Protect email-link requests with CAPTCHA under **Authentication → Protection**. Create a Cloudflare Turnstile widget for your website hostname, set its secret in Supabase, and put its public site key in `backend-config.js`.
+5. Add `GEMINI_API_KEY` under **Project Settings → Edge Functions → Secrets**. Keep the key in Supabase only; never commit it or put it in `backend-config.js`.
+6. Deploy the Edge Function with the Supabase CLI:
 
    ```powershell
    npx supabase login
@@ -33,10 +34,10 @@ GitHub Pages hosts the static app; Supabase provides anonymous sign-in, the shar
    ```
 
    Optionally set `GEMINI_MODEL` as a Supabase secret; the function defaults to `gemini-3.5-flash-lite`.
-6. Put the Supabase **Project URL**, **publishable key**, and Turnstile **site key** in `backend-config.js`. These values are public browser configuration; never put the Gemini key, CAPTCHA secret, or a Supabase service-role/secret key in that file.
-7. Push this project to a GitHub repository on its `main` or `master` branch. In the repository settings, enable **Pages → Source: GitHub Actions**. The workflow at `.github/workflows/pages.yml` publishes the static site after a push.
+7. Put the Supabase **Project URL**, **publishable key**, and Turnstile **site key** in `backend-config.js`. These values are public browser configuration; never put the Gemini key, CAPTCHA secret, or a Supabase service-role/secret key in that file.
+8. Push this project to a GitHub repository on its `main` or `master` branch. In the repository settings, enable **Pages → Source: GitHub Actions**. The workflow at `.github/workflows/pages.yml` publishes the static site after a push.
 
-Leaderboard participation is optional. Only the chosen display name and score are public; joining creates a private anonymous account without an email address. Friends are added by sharing a private friend code; requests must be accepted, and either person can remove the friendship. Friend lists and requests are only visible to the signed-in accounts involved. Leaving deletes the profile, leaderboard session records, and friend relationships. Clearing browser storage can make an anonymous account unrecoverable. Points are awarded by the client when it reports a completed timer, so they can be gamed; the leaderboard is for fun, not prizes or high-stakes competition.
+Leaderboard participation is optional. Only the chosen display name and score are public; joining creates a private profile for the signed-in account. Friends are added by sharing a private friend code; requests must be accepted, and either person can remove the friendship. Friend lists and requests are only visible to the signed-in accounts involved. Leaving deletes the profile, leaderboard session records, and friend relationships. Points are awarded by the client when it reports a completed timer, so they can be gamed; the leaderboard is for fun, not prizes or high-stakes competition.
 
 To enable friend requests, account profiles, and cross-device statistics on an existing Supabase project, run the updated [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. This adds friend codes, private friend-request functions, and account statistics while keeping table access restricted to the app's authenticated RPCs.
 

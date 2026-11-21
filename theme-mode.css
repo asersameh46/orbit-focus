@@ -79,6 +79,7 @@ html[data-mode="light"] .coach-nudge,
 html[data-mode="light"] .friends-panel,
 html[data-mode="light"] .coach-chat,
 html[data-mode="light"] .account-panel,
+html[data-mode="light"] .auth-gate-card,
 html[data-mode="light"] .appearance-panel,
 html[data-mode="light"] .brand-note,
 html[data-mode="light"] .leaderboard-panel,
@@ -92,6 +93,8 @@ html[data-mode="light"] .sidebar { background: rgba(255,255,255,.91); }
 html[data-mode="light"] .topbar { border-bottom-color: rgba(34,43,62,.12); }
 html[data-mode="light"] .topbar-context,
 html[data-mode="light"] .brand,
+html[data-mode="light"] .auth-gate-brand,
+html[data-mode="light"] .auth-gate-copy h1,
 html[data-mode="light"] .page-heading h1,
 html[data-mode="light"] .section-title-row h2,
 html[data-mode="light"] .duration-heading h2,
@@ -144,6 +147,7 @@ html[data-mode="light"] .leaderboard-form input {
 }
 
 html[data-mode="light"] .account-auth-form input,
+html[data-mode="light"] .auth-gate-form input,
 html[data-mode="light"] .account-profile-form input {
   border-color: rgba(34,43,62,.14);
   color: #20283a;

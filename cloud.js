@@ -56,12 +56,10 @@
     if (!client) throw new Error("Cloud services are not configured.");
     const current = await client.auth.getSession();
     if (current.error) throw current.error;
-    if (current.data.session) return current.data.session;
-    const captchaToken = await getCaptchaToken();
-    const signedIn = await client.auth.signInAnonymously({ options: { captchaToken: captchaToken } });
-    if (signedIn.error) throw signedIn.error;
-    if (!signedIn.data.session) throw new Error("Anonymous sign-in did not return a session.");
-    return signedIn.data.session;
+    if (!current.data.session || (current.data.session.user && current.data.session.user.is_anonymous)) {
+      throw new Error("Sign in with your email to use Orbit Focus.");
+    }
+    return current.data.session;
   }
 
   async function callRpc(name, args) {
@@ -94,44 +92,17 @@
     return function () { result.data.subscription.unsubscribe(); };
   }
 
-  async function signUp(email, password) {
+  async function sendEmailLink(email) {
     if (!client) throw new Error("Cloud services are not configured.");
     const captchaToken = await getCaptchaToken();
-    const result = await client.auth.signUp({
+    const result = await client.auth.signInWithOtp({
       email: email,
-      password: password,
       options: {
+        shouldCreateUser: true,
         captchaToken: captchaToken,
         emailRedirectTo: root.location.origin + root.location.pathname
       }
     });
-    if (result.error) throw result.error;
-    return result.data;
-  }
-
-  async function upgradeAnonymousAccount(email, password) {
-    if (!client) throw new Error("Cloud services are not configured.");
-    const current = await client.auth.getSession();
-    if (current.error) throw current.error;
-    if (!current.data.session || !current.data.session.user.is_anonymous) {
-      return signUp(email, password);
-    }
-
-    const captchaToken = await getCaptchaToken();
-    const result = await client.auth.updateUser(
-      { email: email, password: password },
-      {
-        captchaToken: captchaToken,
-        emailRedirectTo: root.location.origin + root.location.pathname
-      }
-    );
-    if (result.error) throw result.error;
-    return result.data;
-  }
-
-  async function signIn(email, password) {
-    if (!client) throw new Error("Cloud services are not configured.");
-    const result = await client.auth.signInWithPassword({ email: email, password: password });
     if (result.error) throw result.error;
     return result.data;
   }
@@ -234,11 +205,9 @@
     removeFriend: removeFriend,
     respondFriendRequest: respondFriendRequest,
     recordSession: recordSession,
-    signIn: signIn,
+    sendEmailLink: sendEmailLink,
     signOut: signOut,
-    signUp: signUp,
     updateProfile: updateProfile,
-    upgradeAnonymousAccount: upgradeAnonymousAccount,
     watchAuth: watchAuth
   };
 }(typeof globalThis !== "undefined" ? globalThis : this));
