@@ -801,6 +801,10 @@
       setAccountLoading(true);
       setAccountError("");
       try {
+        const currentSession = await window.OrbitCloud.getAuthSession();
+        const currentUser = currentSession && currentSession.user;
+        if (!currentUser || !currentUser.email || currentUser.is_anonymous) return;
+
         let profile = await window.OrbitCloud.getProfile();
         if (!profile) {
           const user = authSession && authSession.user;
