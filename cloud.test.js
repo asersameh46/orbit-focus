@@ -85,3 +85,38 @@ test("sends a Turnstile token when creating an anonymous Supabase session", asyn
 
   assert.equal(signInOptions.options.captchaToken, "captcha-test-token");
 });
+
+test("sends friend actions through authenticated Supabase RPCs", async function () {
+  const calls = [];
+  const client = {
+    auth: {
+      getSession: async function () {
+        return { data: { session: { access_token: "test-session" } }, error: null };
+      }
+    },
+    rpc: async function (name, args) {
+      calls.push({ name: name, args: args || {} });
+      return { data: true, error: null };
+    }
+  };
+  const context = {
+    ORBIT_CONFIG: {
+      supabaseUrl: "https://example.supabase.co",
+      supabaseAnonKey: "public-test-key"
+    },
+    supabase: { createClient: function () { return client; } }
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "cloud.js"), "utf8"), context);
+
+  await context.OrbitCloud.getMyFriends();
+  await context.OrbitCloud.addFriend("ABCDEF123456");
+  await context.OrbitCloud.respondFriendRequest("ABCDEF123456", true);
+  await context.OrbitCloud.removeFriend("ABCDEF123456");
+
+  assert.equal(JSON.stringify(calls), JSON.stringify([
+    { name: "get_my_friends", args: {} },
+    { name: "add_friend", args: { p_friend_code: "ABCDEF123456" } },
+    { name: "respond_friend_request", args: { p_friend_code: "ABCDEF123456", p_accept: true } },
+    { name: "remove_friend", args: { p_friend_code: "ABCDEF123456" } }
+  ]));
+});

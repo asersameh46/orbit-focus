@@ -140,6 +140,9 @@
       h("path", { d: "m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z" }));
     if (props.name === "check") return h("svg", Object.assign({}, common, stroke), h("path", { d: "m5 12 4 4L19 6" }));
     if (props.name === "arrow") return h("svg", Object.assign({}, common, stroke), h("path", { d: "M5 12h14m-6-6 6 6-6 6" }));
+    if (props.name === "friends") return h("svg", Object.assign({}, common, stroke),
+      h("circle", { cx: "9", cy: "8", r: "3" }),
+      h("path", { d: "M3.5 20v-1a5.5 5.5 0 0 1 11 0v1M16 5.5a3 3 0 0 1 0 5.8M17 14a5 5 0 0 1 3.5 4.8V20" }));
     if (props.name === "home") return h("svg", Object.assign({}, common, stroke), h("path", { d: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" }));
     if (props.name === "clock") return h("svg", Object.assign({}, common, stroke), h("circle", { cx: "12", cy: "12", r: "9" }), h("path", { d: "M12 7v5l3 2" }));
     if (props.name === "gift") return h("svg", Object.assign({}, common, stroke),
@@ -402,6 +405,74 @@
               h("div", null, h("span", null, "03"), h("strong", null, "Cosmic"), h("small", null, "5,000 credits")))))));
   }
 
+  function FriendsPanel(props) {
+    function submit(event) {
+      event.preventDefault();
+      props.onAddFriend();
+    }
+
+    const friends = props.data && Array.isArray(props.data.friends) ? props.data.friends : [];
+    const incoming = props.data && Array.isArray(props.data.incoming) ? props.data.incoming : [];
+    const outgoing = props.data && Array.isArray(props.data.outgoing) ? props.data.outgoing : [];
+
+    return h("section", { className: "friends-panel" },
+      h("div", { className: "leaderboard-heading" },
+        h("span", { className: "leaderboard-icon" }, h(Icon, { name: "friends" })),
+        h("div", null, h("h2", null, "Your friends"), h("p", null, "Add people with their private 12-character friend code."))),
+      props.error ? h("p", { className: "leaderboard-notice friends-error", role: "alert" }, props.error) : null,
+      props.notice ? h("p", { className: "leaderboard-notice", role: "status" }, props.notice) : null,
+      !props.profile || !props.profile.is_public
+        ? h("div", { className: "leaderboard-empty" }, "Join the leaderboard to get your private friend code and add friends.")
+        : h(React.Fragment, null,
+            h("div", { className: "friends-code-card" },
+              h("div", null,
+                h("span", { className: "friends-code-label" }, "YOUR FRIEND CODE"),
+                h("strong", { className: "friends-code" }, props.profile.friend_code || "Loading…")),
+              h("button", { className: "button button-reset", type: "button", disabled: !props.profile.friend_code, onClick: props.onCopyCode }, "Copy code")),
+            h("form", { className: "friends-add-form", onSubmit: submit },
+              h("label", { htmlFor: "friendCode" }, "Add a friend"),
+              h("div", null,
+                h("input", { id: "friendCode", type: "text", maxLength: 12, minLength: 12, required: true,
+                  pattern: "[A-Fa-f0-9]{12}", autoComplete: "off", autoCapitalize: "characters",
+                  value: props.code, onChange: function (event) { props.setCode(event.target.value.toUpperCase()); },
+                  placeholder: "Enter their friend code", "aria-describedby": "friendCodeHelp" }),
+                h("button", { className: "button button-start", type: "submit", disabled: props.loading }, props.loading ? "Sending…" : "Send request")),
+              h("small", { id: "friendCodeHelp" }, "Ask them to share their code with you.")),
+            incoming.length
+              ? h("div", { className: "friends-group" },
+                  h("h3", null, "Friend requests"),
+                  incoming.map(function (request) {
+                    return h("div", { className: "friend-row", key: request.friend_code },
+                      h("span", { className: "friend-name" }, request.display_name),
+                      h("button", { className: "button button-start", type: "button", disabled: props.loading,
+                        onClick: function () { props.onRespond(request.friend_code, true); } }, "Accept"),
+                      h("button", { className: "button button-reset", type: "button", disabled: props.loading,
+                        onClick: function () { props.onRespond(request.friend_code, false); } }, "Decline"));
+                  }))
+              : null,
+            outgoing.length
+              ? h("div", { className: "friends-group" },
+                  h("h3", null, "Sent requests"),
+                  outgoing.map(function (request, index) {
+                    return h("div", { className: "friend-row friend-outgoing", key: request.display_name + index },
+                      h("span", { className: "friend-name" }, request.display_name),
+                      h("span", { className: "friend-pending" }, "Pending"));
+                  }))
+              : null,
+            h("div", { className: "friends-group" },
+              h("h3", null, "Friends · " + friends.length),
+              friends.length
+                ? h("div", { className: "friends-list" }, friends.map(function (friend) {
+                    return h("div", { className: "friend-row", key: friend.friend_code },
+                      h("span", { className: "friend-name" }, friend.display_name),
+                      h("span", { className: "friend-score" }, Number(friend.credits).toLocaleString() + " CR"),
+                      h("button", { className: "button button-reset", type: "button", disabled: props.loading,
+                        onClick: function () { props.onRemove(friend); } }, "Remove"));
+                  }))
+                : h("div", { className: "leaderboard-empty" }, "No friends yet. Share your code or enter a friend's code to get started."))),
+      h("p", { className: "leaderboard-privacy" }, "Friend codes are only shared when you choose to copy or send them. You can remove a friend at any time."));
+  }
+
   function LeaderboardPage(props) {
     function submit(event) {
       event.preventDefault();
@@ -447,7 +518,20 @@
                   value: props.name, onChange: function (event) { props.setName(event.target.value); },
                   placeholder: "e.g. OrbitLearner", autoComplete: "nickname" }),
                 h("button", { className: "button button-start", type: "submit", disabled: props.loading || !props.configured }, props.loading ? "Joining…" : "Join"))),
-        h("p", { className: "leaderboard-privacy" }, "Only opt in if you’re comfortable sharing this nickname and your score. Points are client-awarded and can be gamed; don’t use them for prizes or high-stakes competition.")));
+        h("p", { className: "leaderboard-privacy" }, "Only opt in if you’re comfortable sharing this nickname and your score. Points are client-awarded and can be gamed; don’t use them for prizes or high-stakes competition.")),
+      h(FriendsPanel, {
+        profile: props.profile,
+        data: props.friends,
+        code: props.friendCode,
+        setCode: props.setFriendCode,
+        loading: props.loading,
+        error: props.friendError,
+        notice: props.friendNotice,
+        onAddFriend: props.onAddFriend,
+        onRespond: props.onRespondFriend,
+        onRemove: props.onRemoveFriend,
+        onCopyCode: props.onCopyCode
+      }));
   }
 
   function CoachPage(props) {
@@ -560,6 +644,10 @@
     const [leaderboardLoading, setLeaderboardLoading] = React.useState(false);
     const [leaderboardError, setLeaderboardError] = React.useState("");
     const [leaderboardNotice, setLeaderboardNotice] = React.useState("");
+    const [friends, setFriends] = React.useState({ friends: [], incoming: [], outgoing: [] });
+    const [friendCode, setFriendCode] = React.useState("");
+    const [friendError, setFriendError] = React.useState("");
+    const [friendNotice, setFriendNotice] = React.useState("");
     const [chatMessages, setChatMessages] = React.useState([
       { role: "assistant", text: "Hey, I’m your Orbit focus coach. Tell me what you’re working on, or ask me to help you choose a session." }
     ]);
@@ -669,6 +757,18 @@
         setLeaderboardEntries(Array.isArray(results[0]) ? results[0] : []);
         setLeaderboardProfile(results[1] || null);
         if (results[1] && results[1].display_name) setLeaderboardName(results[1].display_name);
+        if (results[1] && results[1].is_public) {
+          try {
+            setFriends(await window.OrbitCloud.getMyFriends());
+            setFriendError("");
+          } catch (error) {
+            console.error("Could not load friend details.", error);
+            setFriendError("Could not load friends. Check that the latest Supabase schema has been applied.");
+          }
+        } else {
+          setFriends({ friends: [], incoming: [], outgoing: [] });
+          setFriendError("");
+        }
       } catch (error) {
         console.error("Could not load the leaderboard.", error);
         setLeaderboardError("Could not load the shared leaderboard. Check the Supabase setup and try again.");
@@ -712,6 +812,71 @@
         setLeaderboardError("Could not update your leaderboard privacy setting. Try again.");
       } finally {
         setLeaderboardLoading(false);
+      }
+    }
+
+    async function addFriend() {
+      setLeaderboardLoading(true);
+      setFriendError("");
+      setFriendNotice("");
+      try {
+        const request = await window.OrbitCloud.addFriend(friendCode.trim());
+        setFriendCode("");
+        setFriendNotice("Friend request sent to " + request.display_name + ".");
+        await refreshLeaderboard();
+      } catch (error) {
+        console.error("Could not send friend request.", error);
+        setFriendError(error.message || "Could not send friend request. Check the code and try again.");
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    }
+
+    async function respondFriendRequest(code, accept) {
+      setLeaderboardLoading(true);
+      setFriendError("");
+      setFriendNotice("");
+      try {
+        const result = await window.OrbitCloud.respondFriendRequest(code, accept);
+        setFriendNotice(accept ? result.display_name + " is now your friend." : "Friend request declined.");
+        await refreshLeaderboard();
+      } catch (error) {
+        console.error("Could not respond to friend request.", error);
+        setFriendError(error.message || "Could not update friend request. Try again.");
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    }
+
+    async function removeFriend(friend) {
+      if (!window.confirm("Remove " + friend.display_name + " from your friends?")) return;
+      setLeaderboardLoading(true);
+      setFriendError("");
+      setFriendNotice("");
+      try {
+        const removed = await window.OrbitCloud.removeFriend(friend.friend_code);
+        if (!removed) throw new Error("Friendship no longer exists.");
+        setFriendNotice(friend.display_name + " was removed from your friends.");
+        await refreshLeaderboard();
+      } catch (error) {
+        console.error("Could not remove friend.", error);
+        setFriendError(error.message || "Could not remove friend. Try again.");
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    }
+
+    async function copyFriendCode() {
+      try {
+        if (!navigator.clipboard || !leaderboardProfile || !leaderboardProfile.friend_code) {
+          throw new Error("Copy is not available in this browser.");
+        }
+        await navigator.clipboard.writeText(leaderboardProfile.friend_code);
+        setFriendError("");
+        setFriendNotice("Friend code copied. Share it only with people you want to add.");
+      } catch (error) {
+        console.error("Could not copy friend code.", error);
+        setFriendError("Could not copy the friend code. Select and copy it manually.");
       }
     }
 
@@ -836,10 +1001,19 @@
         name: leaderboardName,
         notice: leaderboardNotice,
         profile: leaderboardProfile,
+        friends: friends,
+        friendCode: friendCode,
+        setFriendCode: setFriendCode,
+        friendError: friendError,
+        friendNotice: friendNotice,
         setName: setLeaderboardName,
         onJoin: joinLeaderboard,
         onLeave: leaveLeaderboard,
-        onRefresh: refreshLeaderboard
+        onRefresh: refreshLeaderboard,
+        onAddFriend: addFriend,
+        onRespondFriend: respondFriendRequest,
+        onRemoveFriend: removeFriend,
+        onCopyCode: copyFriendCode
       });
     } else if (page === "coach") {
       pageContent = h(CoachPage, { draft: chatDraft, setDraft: setChatDraft, messages: chatMessages, onSend: sendCoachMessage, loading: chatLoading });

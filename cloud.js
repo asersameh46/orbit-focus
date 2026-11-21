@@ -94,6 +94,22 @@
     return result.data;
   }
 
+  async function getMyFriends() {
+    return callRpc("get_my_friends");
+  }
+
+  async function addFriend(friendCode) {
+    return callRpc("add_friend", { p_friend_code: friendCode });
+  }
+
+  async function respondFriendRequest(friendCode, accept) {
+    return callRpc("respond_friend_request", { p_friend_code: friendCode, p_accept: accept });
+  }
+
+  async function removeFriend(friendCode) {
+    return callRpc("remove_friend", { p_friend_code: friendCode });
+  }
+
   async function recordSession(session) {
     if (!session || !session.completedAt || !Number.isFinite(session.duration)) return null;
     if (!client) return null;
@@ -138,10 +154,14 @@
   root.OrbitCloud = {
     configured: configured,
     coach: coach,
+    addFriend: addFriend,
     getLeaderboard: getLeaderboard,
+    getMyFriends: getMyFriends,
     getProfile: getProfile,
     joinLeaderboard: joinLeaderboard,
     leaveLeaderboard: leaveLeaderboard,
+    removeFriend: removeFriend,
+    respondFriendRequest: respondFriendRequest,
     recordSession: recordSession
   };
 }(typeof globalThis !== "undefined" ? globalThis : this));

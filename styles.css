@@ -319,6 +319,26 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .leaderboard-current > strong { color: #d7c6ff; font-family: "DM Mono", monospace; font-size: 9px; }
 .leaderboard-current .button { min-height: 34px; padding: 0 10px; font-size: 8px; }
 .leaderboard-privacy { width: 100%; max-width: 100%; color: var(--muted) !important; font-size: 8px !important; }
+.friends-panel { display: grid; gap: 14px; padding: 19px; border: 1px solid var(--line); border-radius: 17px; background: linear-gradient(145deg, rgba(19,25,39,.97), rgba(13,18,29,.99)); }
+.friends-panel .leaderboard-heading { margin-bottom: 0; }
+.friends-code-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid rgba(193,168,255,.14); border-radius: 12px; background: rgba(177,149,255,.055); }
+.friends-code-card > div { display: grid; gap: 5px; }
+.friends-code-label { color: var(--muted); font-family: "DM Mono", monospace; font-size: 8px; letter-spacing: .12em; }
+.friends-code { color: var(--text); font-family: "DM Mono", monospace; font-size: 16px; letter-spacing: .1em; }
+.friends-add-form { display: grid; gap: 7px; }
+.friends-add-form > label { color: var(--text); font-size: 10px; font-weight: 700; }
+.friends-add-form > div { display: flex; gap: 8px; }
+.friends-add-form input { width: min(100%, 300px); min-width: 0; height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; outline: none; color: var(--text); background: rgba(255,255,255,.035); font-family: "DM Mono", monospace; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.friends-add-form > small { color: var(--muted); font-size: 8px; }
+.friends-group { display: grid; gap: 8px; }
+.friends-group > h3 { margin: 3px 0 0; color: var(--muted); font-size: 9px; font-weight: 700; }
+.friends-list { display: grid; }
+.friend-row { display: flex; min-height: 48px; align-items: center; gap: 9px; padding: 6px 0; border-top: 1px solid rgba(255,255,255,.06); }
+.friend-name { min-width: 0; flex: 1; overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.friend-score, .friend-pending { color: var(--muted); font-family: "DM Mono", monospace; font-size: 8px; white-space: nowrap; }
+.friend-row .button { min-height: 32px; padding: 0 9px; font-size: 8px; }
+.friend-outgoing { border-top: 0; }
+.friends-error { color: #ffb5b5; }
 .page-footer a { margin-left: 8px; color: #bda8f4; font-size: 8px; text-decoration: none; }
 .page-footer a:hover { text-decoration: underline; }
 
@@ -454,6 +474,12 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
   .leaderboard-join-panel { padding: 15px; }
   .leaderboard-form > div { flex-wrap: wrap; }
   .leaderboard-form input { width: 100%; flex-basis: 100%; }
+  .friends-panel { padding: 15px; }
+  .friends-add-form > div { align-items: stretch; flex-direction: column; }
+  .friends-add-form input { width: 100%; }
+  .friend-row { flex-wrap: wrap; }
+  .friend-row .friend-name { flex-basis: 40%; }
+  .friends-code-card { align-items: flex-start; flex-direction: column; }
   .completion-backdrop,
   .captcha-overlay {
     padding: 12px;
