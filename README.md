@@ -13,6 +13,7 @@ python server.py
 ```
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000). Stop the server with `Ctrl+C`.
+Email sign-in uses a Turnstile widget configured for the published site. To test sign-in locally, add both `127.0.0.1` and `localhost` to that widget's allowed hostnames in Cloudflare; otherwise, use the [published site](https://asersameh46.github.io/orbit-focus/).
 
 The timer, theme, sound preference, and rewards are stored in the browser on this device. The coach uses guided local replies unless a Gemini key is configured. Run the focused tests with `node --test`.
 
@@ -23,7 +24,7 @@ GitHub Pages hosts the static app; Supabase provides email-link authentication, 
 1. Keep the **Email** provider enabled under Authentication providers.
 2. Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor.
 3. Configure **Authentication → URL Configuration** with the deployed site URL and allowed redirect URL.
-4. Protect email-link requests with CAPTCHA under **Authentication → Protection**. Create a Cloudflare Turnstile widget for your website hostname, set its secret in Supabase, and put its public site key in `backend-config.js`.
+4. Protect email-link requests with CAPTCHA under **Authentication → Protection**. Create a Cloudflare Turnstile widget for your website hostname, set its secret in Supabase, and put its public site key in `backend-config.js`. Add `127.0.0.1` and `localhost` to the widget's allowed hostnames only if you need to test email sign-in from the local development server.
 5. Add `GEMINI_API_KEY` under **Project Settings → Edge Functions → Secrets**. Keep the key in Supabase only; never commit it or put it in `backend-config.js`.
 6. Deploy the Edge Function with the Supabase CLI:
 

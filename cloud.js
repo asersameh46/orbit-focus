@@ -30,24 +30,34 @@
       let widgetId;
       let settled = false;
 
-      function finish(error, token) {
+      function finish(error, token, removeWidget) {
         if (settled) return;
         settled = true;
-        if (widgetId !== undefined) root.turnstile.remove(widgetId);
+        if (widgetId !== undefined && removeWidget !== false) root.turnstile.remove(widgetId);
         overlay.remove();
         if (error) reject(error);
         else resolve(token);
       }
 
       cancelButton.addEventListener("click", function () {
-        finish(new Error("Security check was cancelled."));
+        finish(new Error("Security check was cancelled."), null, true);
       });
 
       widgetId = root.turnstile.render(widgetContainer, {
         sitekey: config.turnstileSiteKey,
         callback: function (token) { finish(null, token); },
-        "error-callback": function () { finish(new Error("Security check failed. Please try again.")); },
-        "expired-callback": function () { finish(new Error("Security check expired. Please try again.")); }
+        "error-callback": function (errorCode) {
+          const hostname = root.location && root.location.hostname;
+          if (String(errorCode) === "110200" && (hostname === "localhost" || hostname === "127.0.0.1")) {
+            const message = "Local email sign-in is blocked by the security check. Use " +
+              "https://asersameh46.github.io/orbit-focus/ or add localhost and 127.0.0.1 " +
+              "to the Turnstile widget's allowed hostnames in Cloudflare.";
+            finish(new Error(message), null, false);
+            return;
+          }
+          finish(new Error("Security check failed. Please try again."), null, false);
+        },
+        "expired-callback": function () { finish(new Error("Security check expired. Please try again."), null, true); }
       });
     });
   }

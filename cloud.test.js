@@ -104,6 +104,58 @@ test("sends friend actions through authenticated Supabase RPCs", async function 
   ]));
 });
 
+test("explains local Turnstile domain errors without resetting a failed widget", async function () {
+  let linkAttempted = false;
+  let widgetRemoved = false;
+  const client = {
+    auth: {
+      signInWithOtp: async function () {
+        linkAttempted = true;
+        return { data: {}, error: null };
+      }
+    }
+  };
+  const context = {
+    ORBIT_CONFIG: {
+      supabaseUrl: "https://example.supabase.co",
+      supabaseAnonKey: "public-test-key",
+      turnstileSiteKey: "public-turnstile-site-key"
+    },
+    location: { hostname: "127.0.0.1", origin: "http://127.0.0.1:8000", pathname: "/" },
+    supabase: { createClient: function () { return client; } },
+    turnstile: {
+      render: function (_container, options) {
+        queueMicrotask(function () { options["error-callback"]("110200"); });
+        return "widget-id";
+      },
+      remove: function () {
+        widgetRemoved = true;
+        throw new Error("Nothing to reset found for provided container.");
+      }
+    },
+    document: {
+      createElement: function () {
+        return {
+          setAttribute: function () {},
+          querySelector: function () { return { addEventListener: function () {} }; },
+          remove: function () {}
+        };
+      },
+      body: { appendChild: function () {} }
+    },
+    Promise: Promise,
+    queueMicrotask: queueMicrotask
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "cloud.js"), "utf8"), context);
+
+  await assert.rejects(
+    context.OrbitCloud.sendEmailLink("focus@example.com"),
+    /Local email sign-in is blocked.*allowed hostnames/
+  );
+  assert.equal(widgetRemoved, false);
+  assert.equal(linkAttempted, false);
+});
+
 test("sends passwordless email links and keeps account statistics available", async function () {
   const calls = [];
   let linkRequest;
