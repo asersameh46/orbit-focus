@@ -1,0 +1,20 @@
+{
+  "name": "Orbit Focus",
+  "short_name": "Orbit",
+  "description": "A calm focus timer for studying, deep work, intentional breaks, and small wins.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080914",
+  "theme_color": "#080914",
+  "orientation": "any",
+  "categories": ["education", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/orbit-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
