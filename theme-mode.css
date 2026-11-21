@@ -78,6 +78,7 @@ html[data-mode="light"] .focus-ritual,
 html[data-mode="light"] .coach-nudge,
 html[data-mode="light"] .friends-panel,
 html[data-mode="light"] .coach-chat,
+html[data-mode="light"] .account-panel,
 html[data-mode="light"] .appearance-panel,
 html[data-mode="light"] .brand-note,
 html[data-mode="light"] .leaderboard-panel,
@@ -111,6 +112,12 @@ html[data-mode="light"] .leaderboard-join-panel h2 {
   color: #20283a;
 }
 
+html[data-mode="light"] .account-panel-heading h2,
+html[data-mode="light"] .account-stat strong,
+html[data-mode="light"] .account-history h3 {
+  color: #20283a;
+}
+
 html[data-mode="light"] .sidebar-caption,
 html[data-mode="light"] .topbar-live,
 html[data-mode="light"] .page-heading p,
@@ -131,6 +138,13 @@ html[data-mode="light"] .leaderboard-rank,
 html[data-mode="light"] .leaderboard-score { color: #5b4b8c; }
 html[data-mode="light"] .leaderboard-refresh,
 html[data-mode="light"] .leaderboard-form input {
+  border-color: rgba(34,43,62,.14);
+  color: #20283a;
+  background: #f7f8fb;
+}
+
+html[data-mode="light"] .account-auth-form input,
+html[data-mode="light"] .account-profile-form input {
   border-color: rgba(34,43,62,.14);
   color: #20283a;
   background: #f7f8fb;

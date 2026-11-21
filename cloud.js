@@ -19,7 +19,7 @@
       overlay.innerHTML =
         '<div class="captcha-dialog">' +
           '<h2 id="captchaTitle">Quick security check</h2>' +
-          '<p>Complete this check to protect the community sign-in.</p>' +
+          '<p>Complete this check to protect your account.</p>' +
           '<div class="captcha-widget"></div>' +
           '<button class="button button-reset" type="button">Cancel</button>' +
         '</div>';
@@ -79,6 +79,77 @@
     return callRpc("get_my_profile");
   }
 
+  async function getAuthSession() {
+    if (!client) throw new Error("Cloud services are not configured.");
+    const result = await client.auth.getSession();
+    if (result.error) throw result.error;
+    return result.data.session;
+  }
+
+  function watchAuth(callback) {
+    if (!client) return function () {};
+    const result = client.auth.onAuthStateChange(function (_event, session) {
+      callback(session);
+    });
+    return function () { result.data.subscription.unsubscribe(); };
+  }
+
+  async function signUp(email, password) {
+    if (!client) throw new Error("Cloud services are not configured.");
+    const captchaToken = await getCaptchaToken();
+    const result = await client.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        captchaToken: captchaToken,
+        emailRedirectTo: root.location.origin + root.location.pathname
+      }
+    });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function upgradeAnonymousAccount(email, password) {
+    if (!client) throw new Error("Cloud services are not configured.");
+    const current = await client.auth.getSession();
+    if (current.error) throw current.error;
+    if (!current.data.session || !current.data.session.user.is_anonymous) {
+      return signUp(email, password);
+    }
+
+    const captchaToken = await getCaptchaToken();
+    const result = await client.auth.updateUser(
+      { email: email, password: password },
+      {
+        captchaToken: captchaToken,
+        emailRedirectTo: root.location.origin + root.location.pathname
+      }
+    );
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function signIn(email, password) {
+    if (!client) throw new Error("Cloud services are not configured.");
+    const result = await client.auth.signInWithPassword({ email: email, password: password });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function signOut() {
+    if (!client) throw new Error("Cloud services are not configured.");
+    const result = await client.auth.signOut();
+    if (result.error) throw result.error;
+  }
+
+  async function updateProfile(displayName) {
+    return callRpc("update_profile", { p_display_name: displayName });
+  }
+
+  async function getMyStats() {
+    return callRpc("get_my_stats");
+  }
+
   async function joinLeaderboard(displayName) {
     return callRpc("join_leaderboard", { p_display_name: displayName });
   }
@@ -116,8 +187,6 @@
     const current = await client.auth.getSession();
     if (current.error) throw current.error;
     if (!current.data.session) return null;
-    const profile = await callRpc("get_my_profile");
-    if (!profile || !profile.is_public) return null;
     return callRpc("record_focus_session", {
       p_session_id: String(session.completedAt),
       p_duration_ms: Math.round(session.duration)
@@ -155,13 +224,21 @@
     configured: configured,
     coach: coach,
     addFriend: addFriend,
+    getAuthSession: getAuthSession,
     getLeaderboard: getLeaderboard,
     getMyFriends: getMyFriends,
+    getMyStats: getMyStats,
     getProfile: getProfile,
     joinLeaderboard: joinLeaderboard,
     leaveLeaderboard: leaveLeaderboard,
     removeFriend: removeFriend,
     respondFriendRequest: respondFriendRequest,
-    recordSession: recordSession
+    recordSession: recordSession,
+    signIn: signIn,
+    signOut: signOut,
+    signUp: signUp,
+    updateProfile: updateProfile,
+    upgradeAnonymousAccount: upgradeAnonymousAccount,
+    watchAuth: watchAuth
   };
 }(typeof globalThis !== "undefined" ? globalThis : this));

@@ -86,19 +86,111 @@ $$;
 
 create or replace function public.get_my_profile()
 returns jsonb
-language sql
+language plpgsql
 security definer
 set search_path = ''
 as $$
-  select case when p.user_id is null then null else jsonb_build_object(
-    'display_name', p.display_name,
-    'friend_code', p.friend_code,
-    'credits', p.credits,
-    'completed_sessions', p.completed_sessions,
-    'is_public', p.is_public
-  ) end
-  from (select auth.uid() as user_id) u
-  left join public.orbit_profiles p on p.user_id = u.user_id;
+declare
+  profile public.orbit_profiles;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in is required.';
+  end if;
+
+  select * into profile
+  from public.orbit_profiles
+  where user_id = auth.uid();
+  if not found then
+    return null;
+  end if;
+
+  return jsonb_build_object(
+    'display_name', profile.display_name,
+    'friend_code', profile.friend_code,
+    'credits', profile.credits,
+    'completed_sessions', profile.completed_sessions,
+    'is_public', profile.is_public
+  );
+end;
+$$;
+
+create or replace function public.update_profile(p_display_name text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  clean_name text := btrim(p_display_name);
+  profile public.orbit_profiles;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in is required.';
+  end if;
+  if char_length(clean_name) < 2 or char_length(clean_name) > 24
+      or clean_name !~ '^[[:alnum:] _.-]+$' then
+    raise exception 'Choose a display name of 2-24 letters, numbers, spaces, dots, underscores, or hyphens.';
+  end if;
+
+  insert into public.orbit_profiles (user_id, display_name, is_public)
+  values (auth.uid(), clean_name, false)
+  on conflict (user_id) do update set display_name = excluded.display_name
+  returning * into profile;
+
+  return jsonb_build_object(
+    'display_name', profile.display_name,
+    'friend_code', profile.friend_code,
+    'credits', profile.credits,
+    'completed_sessions', profile.completed_sessions,
+    'is_public', profile.is_public
+  );
+end;
+$$;
+
+create or replace function public.get_my_stats()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in is required.';
+  end if;
+
+  return jsonb_build_object(
+    'completed_sessions', coalesce((
+      select count(*)::integer
+      from public.orbit_focus_sessions
+      where user_id = auth.uid()
+    ), 0),
+    'credits', coalesce((
+      select sum(credits)::bigint
+      from public.orbit_focus_sessions
+      where user_id = auth.uid()
+    ), 0),
+    'total_focus_ms', coalesce((
+      select sum(duration_ms)::bigint
+      from public.orbit_focus_sessions
+      where user_id = auth.uid()
+    ), 0),
+    'recent_sessions', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'duration_ms', recent.duration_ms,
+        'credits', recent.credits,
+        'completed_at', recent.completed_at
+      ) order by recent.completed_at desc)
+      from (
+        select duration_ms, credits, completed_at
+        from public.orbit_focus_sessions
+        where user_id = auth.uid()
+        order by completed_at desc
+        limit 20
+      ) recent
+    ), '[]'::jsonb)
+  );
+end;
 $$;
 
 create or replace function public.leave_leaderboard()
@@ -135,12 +227,9 @@ begin
   if p_duration_ms is null or p_duration_ms < 60000 or p_duration_ms > 86400000 then
     raise exception 'Session duration is outside the allowed range.';
   end if;
-  if not exists (
-    select 1 from public.orbit_profiles
-    where user_id = auth.uid() and is_public = true
-  ) then
-    return jsonb_build_object('recorded', false, 'reason', 'not_joined');
-  end if;
+  insert into public.orbit_profiles (user_id, display_name, is_public)
+  values (auth.uid(), 'Orbit Member', false)
+  on conflict (user_id) do nothing;
 
   award := greatest(1, floor(p_duration_ms / 6000.0)::integer);
   insert into public.orbit_focus_sessions (user_id, session_id, duration_ms, credits)
@@ -368,6 +457,8 @@ $$;
 
 revoke all on function public.join_leaderboard(text) from public;
 revoke all on function public.get_my_profile() from public;
+revoke all on function public.update_profile(text) from public;
+revoke all on function public.get_my_stats() from public;
 revoke all on function public.leave_leaderboard() from public;
 revoke all on function public.record_focus_session(text, integer) from public;
 revoke all on function public.get_leaderboard() from public;
@@ -377,6 +468,8 @@ revoke all on function public.respond_friend_request(text, boolean) from public;
 revoke all on function public.remove_friend(text) from public;
 grant execute on function public.join_leaderboard(text) to authenticated;
 grant execute on function public.get_my_profile() to authenticated;
+grant execute on function public.update_profile(text) to authenticated;
+grant execute on function public.get_my_stats() to authenticated;
 grant execute on function public.leave_leaderboard() to authenticated;
 grant execute on function public.record_focus_session(text, integer) to authenticated;
 grant execute on function public.get_leaderboard() to anon, authenticated;

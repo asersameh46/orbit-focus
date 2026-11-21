@@ -58,6 +58,7 @@ test("sends a Turnstile token when creating an anonymous Supabase session", asyn
       supabaseAnonKey: "public-test-key",
       turnstileSiteKey: "public-turnstile-site-key"
     },
+    location: { origin: "https://orbit.example", pathname: "/app/" },
     supabase: { createClient: function () { return client; } },
     turnstile: {
       render: function (_container, options) {
@@ -119,4 +120,91 @@ test("sends friend actions through authenticated Supabase RPCs", async function 
     { name: "respond_friend_request", args: { p_friend_code: "ABCDEF123456", p_accept: true } },
     { name: "remove_friend", args: { p_friend_code: "ABCDEF123456" } }
   ]));
+});
+
+test("supports email sign-in, profile updates, and account statistics", async function () {
+  const calls = [];
+  let credentials;
+  const session = { user: { id: "account-1", email: "focus@example.com", is_anonymous: false } };
+  const client = {
+    auth: {
+      getSession: async function () { return { data: { session: session }, error: null }; },
+      signInWithPassword: async function (value) {
+        credentials = value;
+        return { data: { session: session }, error: null };
+      },
+      signOut: async function () { return { error: null }; }
+    },
+    rpc: async function (name, args) {
+      calls.push({ name: name, args: args || {} });
+      return { data: name === "get_my_stats" ? { completed_sessions: 3 } : { display_name: "OrbitLearner" }, error: null };
+    }
+  };
+  const context = {
+    ORBIT_CONFIG: { supabaseUrl: "https://example.supabase.co", supabaseAnonKey: "public-test-key" },
+    supabase: { createClient: function () { return client; } }
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "cloud.js"), "utf8"), context);
+
+  await context.OrbitCloud.signIn("focus@example.com", "correct-horse");
+  assert.equal(credentials.email, "focus@example.com");
+  assert.equal((await context.OrbitCloud.getAuthSession()).user.id, "account-1");
+  await context.OrbitCloud.updateProfile("OrbitLearner");
+  assert.equal((await context.OrbitCloud.getMyStats()).completed_sessions, 3);
+  await context.OrbitCloud.signOut();
+  assert.equal(JSON.stringify(calls), JSON.stringify([
+    { name: "update_profile", args: { p_display_name: "OrbitLearner" } },
+    { name: "get_my_stats", args: {} }
+  ]));
+});
+
+test("upgrades an anonymous session into an email account with CAPTCHA", async function () {
+  let update;
+  const client = {
+    auth: {
+      getSession: async function () {
+        return { data: { session: { user: { id: "anonymous-1", is_anonymous: true } } }, error: null };
+      },
+      updateUser: async function (attributes, options) {
+        update = { attributes: attributes, options: options };
+        return { data: { user: { id: "anonymous-1", is_anonymous: false } }, error: null };
+      }
+    }
+  };
+  const context = {
+    ORBIT_CONFIG: {
+      supabaseUrl: "https://example.supabase.co",
+      supabaseAnonKey: "public-test-key",
+      turnstileSiteKey: "public-turnstile-site-key"
+    },
+    location: { origin: "https://orbit.example", pathname: "/app/" },
+    supabase: { createClient: function () { return client; } },
+    turnstile: {
+      render: function (_container, options) {
+        queueMicrotask(function () { options.callback("captcha-upgrade-token"); });
+        return "widget-id";
+      },
+      remove: function () {}
+    },
+    document: {
+      createElement: function () {
+        return {
+          setAttribute: function () {},
+          querySelector: function () { return { addEventListener: function () {} }; },
+          remove: function () {}
+        };
+      },
+      body: { appendChild: function () {} }
+    },
+    Promise: Promise,
+    queueMicrotask: queueMicrotask
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "cloud.js"), "utf8"), context);
+
+  await context.OrbitCloud.upgradeAnonymousAccount("focus@example.com", "correct-horse");
+
+  assert.equal(update.attributes.email, "focus@example.com");
+  assert.equal(update.attributes.password, "correct-horse");
+  assert.equal(update.options.captchaToken, "captcha-upgrade-token");
+  assert.equal(update.options.emailRedirectTo, "https://orbit.example/app/");
 });

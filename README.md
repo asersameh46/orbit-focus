@@ -2,6 +2,8 @@
 
 A personal focus dashboard with a session timer, saved progress, rewards, an optional shared leaderboard and friend requests, a Gemini-powered coach, five color themes, dark/light display modes, and synthesized sound effects.
 
+Use **My profile** in the app to create an email/password account or sign in on another device. The profile page lets signed-in users change their display name and view account-level focus sessions, time, credits, and recent session history. Sessions saved on the current device are synced when an account signs in. Anonymous leaderboard users can upgrade their temporary account to an email/password account.
+
 ## Run locally
 
 Python 3.7 or newer is the only requirement for the local web server:
@@ -36,7 +38,7 @@ GitHub Pages hosts the static app; Supabase provides anonymous sign-in, the shar
 
 Leaderboard participation is optional. Only the chosen display name and score are public; joining creates a private anonymous account without an email address. Friends are added by sharing a private friend code; requests must be accepted, and either person can remove the friendship. Friend lists and requests are only visible to the signed-in accounts involved. Leaving deletes the profile, leaderboard session records, and friend relationships. Clearing browser storage can make an anonymous account unrecoverable. Points are awarded by the client when it reports a completed timer, so they can be gamed; the leaderboard is for fun, not prizes or high-stakes competition.
 
-To enable friend requests on an existing Supabase project, run the updated [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. This adds friend codes and private friend-request functions while keeping table access restricted to the app's authenticated RPCs.
+To enable friend requests, account profiles, and cross-device statistics on an existing Supabase project, run the updated [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. This adds friend codes, private friend-request functions, and account statistics while keeping table access restricted to the app's authenticated RPCs.
 
 Coach messages and the current focus-session context are sent to Gemini through Supabase when configured. Without cloud configuration, the app falls back to local coach replies. For local Gemini testing only, set `GEMINI_API_KEY` before starting `server.py`.
 

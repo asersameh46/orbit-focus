@@ -339,6 +339,28 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
 .friend-row .button { min-height: 32px; padding: 0 9px; font-size: 8px; }
 .friend-outgoing { border-top: 0; }
 .friends-error { color: #ffb5b5; }
+.account-panel { display: grid; gap: 16px; min-width: 0; padding: 19px; border: 1px solid var(--line); border-radius: 17px; background: linear-gradient(145deg, rgba(19,25,39,.97), rgba(13,18,29,.99)); }
+.account-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.account-panel-heading > div { display: grid; gap: 5px; min-width: 0; }
+.account-panel-heading h2 { margin: 0; color: var(--text); font-size: 13px; }
+.account-panel-heading p { margin: 0; overflow-wrap: anywhere; color: var(--muted); font-size: 9px; line-height: 1.6; }
+.account-auth-form, .account-profile-form { display: grid; width: min(100%, 430px); gap: 8px; }
+.account-auth-form label, .account-profile-form label { margin-top: 5px; color: var(--text); font-size: 9px; font-weight: 700; }
+.account-auth-form input, .account-profile-form input { width: 100%; min-width: 0; height: 42px; padding: 0 11px; border: 1px solid var(--line); border-radius: 9px; outline: none; color: var(--text); background: rgba(255,255,255,.035); font-size: 10px; }
+.account-auth-form input:focus, .account-profile-form input:focus { border-color: var(--ui-accent); }
+.account-profile-form > div { display: flex; gap: 8px; }
+.account-profile-form > div .button { flex: 0 0 auto; }
+.account-auth-form > .account-submit { justify-self: start; min-width: 150px; margin-top: 8px; }
+.account-mode-toggle { justify-self: start; padding: 5px 0; border: 0; color: #c6b5fb; background: transparent; cursor: pointer; font-size: 9px; }
+.account-auth-form > small, .account-profile-form > small { color: var(--muted); font-size: 8px; line-height: 1.6; }
+.account-message { margin: 0; color: #a7e6d2; font-size: 9px; line-height: 1.6; }
+.account-error { color: #ffb5b5; }
+.account-stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.account-stat { display: grid; min-width: 0; gap: 6px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
+.account-stat strong { overflow-wrap: anywhere; color: var(--text); font-family: "DM Mono", monospace; font-size: clamp(14px, 2vw, 21px); font-weight: 500; }
+.account-stat span { color: var(--muted); font-size: 8px; }
+.account-history { display: grid; gap: 8px; }
+.account-history h3 { margin: 4px 0 0; color: var(--text); font-size: 10px; }
 .page-footer a { margin-left: 8px; color: #bda8f4; font-size: 8px; text-decoration: none; }
 .page-footer a:hover { text-decoration: underline; }
 
@@ -475,6 +497,14 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid 
   .leaderboard-form > div { flex-wrap: wrap; }
   .leaderboard-form input { width: 100%; flex-basis: 100%; }
   .friends-panel { padding: 15px; }
+  .account-panel { padding: 15px; }
+  .account-panel-heading { align-items: flex-start; }
+  .account-profile-form > div { align-items: stretch; flex-direction: column; }
+  .account-profile-form > div .button { min-height: 40px; }
+  .account-stat-grid { grid-template-columns: 1fr; }
+  .account-stat { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .account-stat strong { grid-column: 2; grid-row: 1; text-align: right; }
+  .account-stat span { grid-column: 1; grid-row: 1; }
   .friends-add-form > div { align-items: stretch; flex-direction: column; }
   .friends-add-form input { width: 100%; }
   .friend-row { flex-wrap: wrap; }
